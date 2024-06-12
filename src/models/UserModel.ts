@@ -11,6 +11,12 @@ export const UserSchema = new Schema<IUser>({
     required: true,
     type: String,
   },
+  role: {
+    required: true,
+    type: String,
+    enum: ["admin", "user"],
+    default: "user",
+  },
   taskboards: [
     {
       type: Schema.Types.ObjectId,

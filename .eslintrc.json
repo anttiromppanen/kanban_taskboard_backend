@@ -27,6 +27,7 @@
                 "argsIgnorePattern": "^_"
             }
         ],
+        "no-underscore-dangle": "off",
         "no-console": "off",
         "func-names": "off",
         "no-plusplus": "off",

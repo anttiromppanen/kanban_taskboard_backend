@@ -2,6 +2,7 @@ import http from "http";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import app from "./app";
+import startWebSocketServer from "./websocketServer";
 
 dotenv.config();
 
@@ -27,7 +28,10 @@ const startServer = async () => {
   const server = http.createServer(app);
   const PORT = process.env.PORT || 3001;
 
-  server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    startWebSocketServer();
+  });
 };
 
 startServer().catch(console.dir);

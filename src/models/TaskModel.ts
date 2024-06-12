@@ -1,7 +1,7 @@
-import { Schema } from "mongoose";
+import { Schema, model } from "mongoose";
 import { ITask } from "../types/types";
 
-const TaskSchema = new Schema<ITask>({
+export const TaskSchema = new Schema<ITask>({
   title: {
     required: true,
     type: String,
@@ -14,6 +14,12 @@ const TaskSchema = new Schema<ITask>({
     required: true,
     type: String,
     enum: ["Backlog", "To do", "In progress", "Done"],
+    default: "Backlog",
+  },
+  taskboardId: {
+    required: true,
+    type: Schema.Types.ObjectId,
+    ref: "Taskboard",
   },
   createdAt: { type: Date, default: Date.now },
   createdBy: {
@@ -23,4 +29,6 @@ const TaskSchema = new Schema<ITask>({
   },
 });
 
-export default TaskSchema;
+const Task = model<ITask>("Task", TaskSchema);
+
+export default Task;

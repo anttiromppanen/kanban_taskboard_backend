@@ -13,11 +13,13 @@ export const TaskboardSchema = new Schema<ITaskboard>({
     type: Schema.Types.ObjectId,
     ref: "User",
   },
-  tasks: {
-    type: Schema.Types.ObjectId,
-    ref: "Task",
-    default: [],
-  },
+  tasks: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Task",
+      default: [],
+    },
+  ],
   users: [
     {
       type: Schema.Types.ObjectId,

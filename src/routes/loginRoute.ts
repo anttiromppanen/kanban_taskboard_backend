@@ -18,7 +18,6 @@ loginRouter.post("/", async (req, res) => {
 
   const userForToken = {
     username: user.username,
-    // eslint-disable-next-line no-underscore-dangle
     id: user._id,
   };
 
@@ -27,7 +26,9 @@ loginRouter.post("/", async (req, res) => {
 
   const token = jwt.sign(userForToken, process.env.SECRET || "");
 
-  return res.status(200).send({ token, username: user.username });
+  return res
+    .status(200)
+    .send({ token, username: user.username, role: user.role });
 });
 
 export default loginRouter;
