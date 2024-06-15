@@ -1,6 +1,8 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import User from "../models/UserModel";
+import { decodedToken } from "../helpers/helpers";
+import { IUser } from "../types/types";
 
 const router = express.Router();
 
@@ -27,6 +29,31 @@ router.post("/", async (req, res) => {
   const savedUser = await user.save();
 
   return res.status(201).json(savedUser);
+});
+
+router.get("/taskboards", async (req, res, next) => {
+  let token;
+
+  try {
+    token = decodedToken(req);
+  } catch (error) {
+    console.error("Error gettings taskboards for user", error);
+    return next(error);
+  }
+
+  const user = await User.findById(token.id)
+    .populate({
+      path: "taskboards",
+      populate: [
+        { path: "createdBy", model: "User", select: ["username"] },
+        { path: "users", model: "User", select: ["username"] },
+      ],
+    })
+    .exec();
+
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  return res.status(200).json(user.taskboards);
 });
 
 export default router;

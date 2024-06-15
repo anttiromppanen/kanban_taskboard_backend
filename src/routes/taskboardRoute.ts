@@ -8,6 +8,24 @@ import User from "../models/UserModel";
 
 const router = express.Router();
 
+router.get("/:taskboardId", async (req, res, next) => {
+  const { taskboardId } = req.params;
+  let taskboard;
+
+  try {
+    decodedToken(req);
+    taskboard = await Taskboard.findById(taskboardId).populate("tasks");
+  } catch (error) {
+    console.error("Error getting taskboard", error);
+    return next(error);
+  }
+
+  if (taskboard === null)
+    return res.status(404).json({ error: "Taskboard not found" });
+
+  return res.status(200).json(taskboard);
+});
+
 router.put("/:taskboardId/task/:taskId", async (req, res, next) => {
   const { title, description, status } = req.body;
   const { taskboardId, taskId } = req.params;

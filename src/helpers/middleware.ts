@@ -15,7 +15,9 @@ const errorHandler = (
     console.error("Invalid token", err);
     return res.status(401).json({ error: "Invalid token" });
   }
-
+  if (err.name === "CastError") {
+    return res.status(400).json({ error: "Malformatted id" });
+  }
   return next(err);
 };
 
