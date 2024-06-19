@@ -10,6 +10,15 @@ export interface ITask extends Document {
   taskboardId: Types.ObjectId;
   createdAt: Date;
   createdBy: Types.ObjectId;
+  users: Types.ObjectId[];
+  comments: {
+    text: string;
+    commentType: "comment" | "question" | "bug";
+    createdBy: Types.ObjectId;
+    createdAt: Date;
+    resolved: boolean | Date;
+    markedResolvedBy: Types.ObjectId;
+  }[];
 }
 
 export interface ITaskboard extends Document {
