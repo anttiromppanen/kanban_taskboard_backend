@@ -1,6 +1,22 @@
 import { Schema, model } from "mongoose";
 import { ITask } from "../types/types";
 
+const replySchema = new Schema({
+  text: {
+    type: String,
+    required: true,
+  },
+  createdBy: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 export const TaskSchema = new Schema<ITask>({
   title: {
     required: true,
@@ -54,6 +70,10 @@ export const TaskSchema = new Schema<ITask>({
         type: Schema.Types.ObjectId,
         ref: "User",
         default: null,
+      },
+      replies: {
+        type: [replySchema],
+        default: [],
       },
     },
   ],

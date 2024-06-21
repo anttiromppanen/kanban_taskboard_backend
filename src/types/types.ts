@@ -18,6 +18,11 @@ export interface ITask extends Document {
     createdAt: Date;
     resolved: boolean | Date;
     markedResolvedBy: Types.ObjectId;
+    replies: {
+      text: string;
+      createdBy: Types.ObjectId;
+      createdAt: Date;
+    }[];
   }[];
 }
 

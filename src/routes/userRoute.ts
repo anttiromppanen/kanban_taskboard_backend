@@ -6,8 +6,18 @@ import { IUser } from "../types/types";
 
 const router = express.Router();
 
-router.get("/", async (_req, res) => {
-  const response = await User.find({});
+router.get("/", async (req, res, next) => {
+  let response;
+  let token;
+
+  try {
+    token = decodedToken(req);
+    response = await User.find({ _id: { $ne: token.id } });
+  } catch (error) {
+    console.error("Error fetching users", error);
+    next(error);
+  }
+
   return res.status(200).json(response);
 });
 

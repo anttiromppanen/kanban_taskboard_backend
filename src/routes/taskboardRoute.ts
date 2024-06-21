@@ -14,7 +14,17 @@ router.get("/:taskboardId", async (req, res, next) => {
 
   try {
     decodedToken(req);
-    taskboard = await Taskboard.findById(taskboardId).populate("tasks");
+    taskboard = await Taskboard.findById(taskboardId).populate({
+      path: "tasks",
+      model: "Task",
+      populate: {
+        path: "comments",
+        populate: [
+          { path: "createdBy", model: "User" },
+          { path: "replies", populate: { path: "createdBy", model: "User" } },
+        ],
+      },
+    });
   } catch (error) {
     console.error("Error getting taskboard", error);
     return next(error);
@@ -59,7 +69,7 @@ router.put("/:taskboardId/task/:taskId", async (req, res, next) => {
 
 // only admins can create new taskboards
 router.post("/", async (req, res, next) => {
-  const { name, description } = req.body;
+  const { name, description, users } = req.body;
   let token;
 
   // validate user from token
@@ -87,7 +97,7 @@ router.post("/", async (req, res, next) => {
     name,
     description,
     createdBy: idAsObjectId,
-    users: [idAsObjectId],
+    users: [idAsObjectId, ...users],
     admins: [idAsObjectId],
   });
 
@@ -96,6 +106,15 @@ router.post("/", async (req, res, next) => {
     savedTaskboard = await newTaskboard.save();
   } catch (err) {
     next(err);
+  }
+
+  if (savedTaskboard) user.taskboards.push(savedTaskboard._id);
+
+  try {
+    await user.save();
+  } catch (error) {
+    console.error("Error saving user");
+    return next(error);
   }
 
   return res.status(201).json(savedTaskboard);
