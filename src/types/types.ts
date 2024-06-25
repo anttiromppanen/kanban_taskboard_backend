@@ -3,6 +3,20 @@ import { Types } from "mongoose";
 type StatusType = "Backlog" | "To do" | "In progress" | "Done";
 type UserRoles = "admin" | "user";
 
+export interface IComment {
+  text: string;
+  commentType: "comment" | "question" | "bug";
+  createdBy: Types.ObjectId;
+  createdAt: Date;
+  resolved: boolean | Date;
+  markedResolvedBy: Types.ObjectId | null;
+  replies: {
+    text: string;
+    createdBy: Types.ObjectId;
+    createdAt: Date;
+  }[];
+}
+
 export interface ITask extends Document {
   title: string;
   description: string;
@@ -11,19 +25,7 @@ export interface ITask extends Document {
   createdAt: Date;
   createdBy: Types.ObjectId;
   users: Types.ObjectId[];
-  comments: {
-    text: string;
-    commentType: "comment" | "question" | "bug";
-    createdBy: Types.ObjectId;
-    createdAt: Date;
-    resolved: boolean | Date;
-    markedResolvedBy: Types.ObjectId;
-    replies: {
-      text: string;
-      createdBy: Types.ObjectId;
-      createdAt: Date;
-    }[];
-  }[];
+  comments: IComment[];
 }
 
 export interface ITaskboard extends Document {

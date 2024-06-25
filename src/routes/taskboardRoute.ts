@@ -2,7 +2,7 @@ import express from "express";
 import { Types } from "mongoose";
 import Taskboard from "../models/TaskboardModel";
 import { decodedToken, notifyWebsocketServer } from "../helpers/helpers";
-import { ITask, IToken } from "../types/types";
+import { IComment, ITask, IToken } from "../types/types";
 import Task from "../models/TaskModel";
 import User from "../models/UserModel";
 
@@ -173,6 +173,66 @@ router.post("/:taskboardId/task", async (req, res, next) => {
   }
 
   return res.status(201).json(updatedTaskboard);
+});
+
+router.post("/:taskboardId/task/:taskId/comment", async (req, res, next) => {
+  const { taskboardId, taskId } = req.params;
+
+  if (!taskboardId)
+    return res.status(401).json({ error: "Taskboard id required" });
+  if (!taskId) return res.status(401).json({ error: "Task id required" });
+
+  const { comment, commentType } = req.body;
+
+  if (!comment?.trim())
+    return res.status(400).json({ error: "Comment cannot be empty" });
+
+  let token;
+  let taskboardById;
+
+  try {
+    token = decodedToken(req);
+    taskboardById = await Taskboard.findById(taskboardId);
+  } catch (err) {
+    return next(err);
+  }
+
+  if (!taskboardById)
+    return res.status(404).json({ error: "Taskboard not found" });
+
+  const isUserInTaskboard = taskboardById.users.find(
+    (userId) => userId.toString() === (token as IToken).id.toString(),
+  );
+
+  if (!isUserInTaskboard)
+    return res.status(401).json({ error: "User not included in taskboard" });
+
+  const newComment: IComment = {
+    text: comment,
+    commentType: commentType || "comment",
+    createdBy: isUserInTaskboard._id,
+    createdAt: new Date(),
+    resolved: false,
+    markedResolvedBy: null,
+    replies: [],
+  };
+
+  const task = await Task.findById(taskId);
+
+  if (!task)
+    return res.status(404).json({ error: "Task not found in taskboard" });
+
+  task.comments.push(newComment);
+
+  let updatedTask;
+
+  try {
+    updatedTask = await task.save();
+  } catch (error) {
+    return next(error);
+  }
+
+  return res.status(201).json(updatedTask);
 });
 
 export default router;
