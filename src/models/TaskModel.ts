@@ -1,22 +1,6 @@
 import { Schema, model } from "mongoose";
 import { ITask } from "../types/types";
 
-const replySchema = new Schema({
-  text: {
-    type: String,
-    required: true,
-  },
-  createdBy: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
-
 export const TaskSchema = new Schema<ITask>({
   title: {
     required: true,
@@ -52,29 +36,9 @@ export const TaskSchema = new Schema<ITask>({
   ],
   comments: [
     {
-      text: { type: String, required: true },
-      commentType: {
-        type: String,
-        required: true,
-        enum: ["comment", "question", "bug"],
-      },
-      createdBy: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
-      createdAt: { type: Date, default: Date.now },
-      // resolved can be a boolean or a date if the comment is resolved
-      resolved: { default: false, type: Schema.Types.Mixed },
-      markedResolvedBy: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        default: null,
-      },
-      replies: {
-        type: [replySchema],
-        default: [],
-      },
+      type: Schema.Types.ObjectId,
+      ref: "Comment",
+      default: [],
     },
   ],
 });

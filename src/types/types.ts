@@ -1,7 +1,25 @@
-import { Types } from "mongoose";
+import { Types, Document } from "mongoose";
 
 type StatusType = "Backlog" | "To do" | "In progress" | "Done";
 type UserRoles = "admin" | "user";
+type CommentType = "comment" | "question" | "bug";
+
+export interface IReply extends Document {
+  text: string;
+  createdBy: Types.ObjectId;
+  createdAt: Date;
+}
+
+export interface IComment extends Document {
+  text: string;
+  task: Types.ObjectId;
+  commentType: CommentType;
+  createdBy: Types.ObjectId;
+  createdAt: Date;
+  resolved: boolean | Date;
+  markedResolvedBy: Types.ObjectId | null;
+  replies: IReply[];
+}
 
 export interface ITask extends Document {
   title: string;
@@ -11,19 +29,7 @@ export interface ITask extends Document {
   createdAt: Date;
   createdBy: Types.ObjectId;
   users: Types.ObjectId[];
-  comments: {
-    text: string;
-    commentType: "comment" | "question" | "bug";
-    createdBy: Types.ObjectId;
-    createdAt: Date;
-    resolved: boolean | Date;
-    markedResolvedBy: Types.ObjectId;
-    replies: {
-      text: string;
-      createdBy: Types.ObjectId;
-      createdAt: Date;
-    }[];
-  }[];
+  comments: Types.ObjectId[];
 }
 
 export interface ITaskboard extends Document {
@@ -47,5 +53,6 @@ export interface IUser extends Document {
 export interface IToken {
   username: string;
   id: Types.ObjectId;
+  role: UserRoles;
   iat: number;
 }
