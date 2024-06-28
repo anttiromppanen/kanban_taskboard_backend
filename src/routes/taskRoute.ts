@@ -67,7 +67,7 @@ router.put("/:taskId", async (req: TaskRequest, res, next) => {
     return next(err);
   }
 
-  notifyWebsocketServer(updatedTask as ITask);
+  // notifyWebsocketServer(updatedTask as ITask);
   return res.status(200).json(updatedTask);
 });
 
