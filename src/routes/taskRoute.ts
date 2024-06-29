@@ -2,18 +2,27 @@ import express, { Request } from "express";
 import { Types } from "mongoose";
 import { notifyWebsocketServer } from "../helpers/helpers";
 import {
+  checkAdminRole,
   checkCommentExists,
   checkCommentInTask,
   checkTaskExists,
   checkTaskInTaskboard,
   checkTaskboardExists,
   checkTaskboardIdsMatch,
+  checkUserExists,
   checkUserInTaskboard,
   validateToken,
 } from "../helpers/validators";
 import Comment from "../models/CommentModel";
 import Task from "../models/TaskModel";
-import { IComment, IReply, ITask, ITaskboard, IToken } from "../types/types";
+import {
+  IComment,
+  IReply,
+  ITask,
+  ITaskboard,
+  IToken,
+  IUser,
+} from "../types/types";
 
 const router = express.Router({ mergeParams: true });
 
@@ -71,6 +80,58 @@ router.put("/:taskId", async (req: TaskRequest, res, next) => {
   return res.status(200).json(updatedTask);
 });
 
+router.delete("/:taskId", async (req: TaskRequest, res, next) => {
+  const { taskboardId, taskId } = req.params;
+
+  let validatedToken;
+  let user;
+  let taskboard;
+  let task;
+
+  // validate everything, check should be admin
+  try {
+    validatedToken = validateToken(req, next) as IToken;
+    taskboard = (await checkTaskboardExists(taskboardId)) as ITaskboard;
+    task = (await checkTaskExists(taskId)) as ITask;
+    user = (await checkUserExists(validatedToken.id)) as IUser;
+
+    checkTaskInTaskboard(taskboard, taskId);
+    checkUserInTaskboard(taskboard, validatedToken.id);
+    checkAdminRole(user);
+  } catch (error) {
+    console.error("Error checking taskboard or task", error);
+    return next(error);
+  }
+
+  // delete comments
+  try {
+    await Comment.deleteMany({ task: task._id });
+  } catch (error) {
+    console.error("Error deleting comments", error);
+    return next(error);
+  }
+
+  // delete task
+  try {
+    await Task.findByIdAndDelete(taskId);
+  } catch (error) {
+    console.error("Error deleting task", error);
+    return next(error);
+  }
+
+  // filter out task from taskboard
+  taskboard.tasks = taskboard.tasks.filter((t) => t.toString() !== taskId);
+
+  try {
+    await taskboard.save();
+  } catch (error) {
+    console.error("Error saving taskboard", error);
+    return next(error);
+  }
+
+  return res.status(204).end();
+});
+
 router.post("/", async (req: TaskRequest, res, next) => {
   const { title, description, status } = req.body;
   const { taskboardId } = req.params;
@@ -84,10 +145,7 @@ router.post("/", async (req: TaskRequest, res, next) => {
       .json({ error: "Fields title, description, status required" });
 
   const validatedToken = validateToken(req, next) as IToken;
-  const taskboardById = (await checkTaskboardExists(
-    taskboardId,
-    next,
-  )) as ITaskboard;
+  const taskboardById = (await checkTaskboardExists(taskboardId)) as ITaskboard;
 
   try {
     checkUserInTaskboard(taskboardById, validatedToken.id);
@@ -133,7 +191,7 @@ router.post("/:taskId/comment", async (req: TaskRequest, res, next) => {
   // validate token, taskboard, task
   try {
     validatedToken = validateToken(req, next) as IToken;
-    taskboard = (await checkTaskboardExists(taskboardId, next)) as ITaskboard;
+    taskboard = (await checkTaskboardExists(taskboardId)) as ITaskboard;
     task = (await checkTaskExists(taskId)) as ITask;
   } catch (error) {
     console.error("Error checking taskboard or task", error);
@@ -187,7 +245,7 @@ router.post(
 
     try {
       validatedToken = validateToken(req, next) as IToken;
-      taskboard = (await checkTaskboardExists(taskboardId, next)) as ITaskboard;
+      taskboard = (await checkTaskboardExists(taskboardId)) as ITaskboard;
       task = (await checkTaskExists(taskId)) as ITask;
     } catch (error) {
       console.error("Error checking taskboard or task", error);
@@ -245,7 +303,7 @@ router.delete(
 
     try {
       validatedToken = validateToken(req, next) as IToken;
-      taskboard = (await checkTaskboardExists(taskboardId, next)) as ITaskboard;
+      taskboard = (await checkTaskboardExists(taskboardId)) as ITaskboard;
       task = (await checkTaskExists(taskId)) as ITask;
       comment = (await checkCommentExists(commentId)) as IComment;
 
@@ -290,7 +348,7 @@ router.delete(
 
     try {
       validatedToken = validateToken(req, next) as IToken;
-      taskboard = (await checkTaskboardExists(taskboardId, next)) as ITaskboard;
+      taskboard = (await checkTaskboardExists(taskboardId)) as ITaskboard;
       task = (await checkTaskExists(taskId)) as ITask;
       comment = (await checkCommentExists(commentId)) as IComment;
 
