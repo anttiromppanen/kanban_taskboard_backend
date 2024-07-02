@@ -2,7 +2,8 @@ import express from "express";
 import bcrypt from "bcrypt";
 import User from "../models/UserModel";
 import { decodedToken } from "../helpers/helpers";
-import { IUser } from "../types/types";
+import { validateToken } from "../helpers/validators";
+import { IToken } from "../types/types";
 
 const router = express.Router();
 
@@ -42,16 +43,9 @@ router.post("/", async (req, res) => {
 });
 
 router.get("/taskboards", async (req, res, next) => {
-  let token;
+  const validatedToken = validateToken(req, next) as IToken;
 
-  try {
-    token = decodedToken(req);
-  } catch (error) {
-    console.error("Error gettings taskboards for user", error);
-    return next(error);
-  }
-
-  const user = await User.findById(token.id)
+  const user = await User.findById(validatedToken.id)
     .populate({
       path: "taskboards",
       populate: [

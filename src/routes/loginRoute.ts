@@ -28,7 +28,7 @@ loginRouter.post("/", async (req, res) => {
 
   return res
     .status(200)
-    .send({ token, username: user.username, role: user.role });
+    .send({ token, username: user.username, role: user.role, id: user._id });
 });
 
 export default loginRouter;

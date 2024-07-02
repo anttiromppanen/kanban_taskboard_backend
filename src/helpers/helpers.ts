@@ -16,9 +16,12 @@ export const decodedToken = (req: Request) => {
   return token as IToken;
 };
 
-export const notifyWebsocketServer = async (task: ITask) => {
+export const notifyWebsocketServer = async (
+  task: ITask,
+  taskboardId: string,
+) => {
   try {
-    await axios.post("http://localhost:8080/wss/notify", task);
+    await axios.post("http://localhost:8080/wss/notify", { task, taskboardId });
   } catch (err) {
     return console.error("Error notifying websocket server", err);
   }
