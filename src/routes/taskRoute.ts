@@ -120,7 +120,7 @@ router.delete("/:taskId", async (req: TaskRequest, res, next) => {
   }
 
   // filter out task from taskboard
-  taskboard.tasks = taskboard.tasks.filter((t) => t.toString() !== taskId);
+  taskboard.tasks = taskboard.tasks.filter((t) => t._id.toString() !== taskId);
 
   try {
     await taskboard.save();
@@ -133,7 +133,7 @@ router.delete("/:taskId", async (req: TaskRequest, res, next) => {
 });
 
 router.post("/", async (req: TaskRequest, res, next) => {
-  const { title, description, status } = req.body;
+  const { title, description, status, users } = req.body;
   const { taskboardId } = req.params;
 
   if (!taskboardId)
@@ -159,6 +159,7 @@ router.post("/", async (req: TaskRequest, res, next) => {
     description,
     status,
     taskboardId,
+    users: users.length ? users : [],
     createdBy: validatedToken.id,
   });
 
