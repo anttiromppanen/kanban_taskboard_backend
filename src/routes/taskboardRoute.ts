@@ -1,7 +1,6 @@
 import express from "express";
 import { Types } from "mongoose";
 import taskRoute from "./taskRoute";
-import { decodedToken } from "../helpers/helpers";
 import {
   checkAdminRole,
   checkTaskboardExists,
@@ -13,6 +12,8 @@ import User from "../models/UserModel";
 import { IToken, IUser } from "../types/types";
 
 const router = express.Router();
+
+router.use("/:taskboardId/task", taskRoute);
 
 router.get("/:taskboardId", async (req, res, next) => {
   const { taskboardId } = req.params;
@@ -43,36 +44,42 @@ router.post("/", async (req, res, next) => {
   }
 
   // convert string id to object id
-  const idAsObjectId = new Types.ObjectId(validatedToken.id);
+  const userAsObjectId = new Types.ObjectId(validatedToken.id);
 
   const newTaskboard = new Taskboard({
     name,
     description,
-    createdBy: idAsObjectId,
-    users: [idAsObjectId, ...users],
-    admins: [idAsObjectId],
+    createdBy: userAsObjectId,
+    users: [userAsObjectId, ...users],
+    admins: [userAsObjectId],
   });
 
   let savedTaskboard;
   try {
     savedTaskboard = await newTaskboard.save();
   } catch (err) {
-    next(err);
+    return next(err);
   }
 
-  if (savedTaskboard)
-    user.taskboards.push(savedTaskboard._id as Types.ObjectId);
+  const usersFromDb = await User.find({
+    _id: { $in: [userAsObjectId, ...users] },
+  });
 
-  try {
-    await user.save();
-  } catch (error) {
-    console.error("Error saving user");
-    return next(error);
-  }
+  // add taskboard to all users
+  usersFromDb.forEach(async (x) => {
+    x.taskboards.push(savedTaskboard._id as Types.ObjectId);
+
+    try {
+      await x.save();
+    } catch (error) {
+      console.error("Error saving user");
+      return next(error);
+    }
+
+    return undefined;
+  });
 
   return res.status(201).json(savedTaskboard);
 });
-
-router.use("/:taskboardId/task", taskRoute);
 
 export default router;
