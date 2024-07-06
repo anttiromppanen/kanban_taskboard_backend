@@ -24,7 +24,7 @@ const resolveHelper = async (
   req: CommentRequest,
   res: Response,
   next: NextFunction,
-  resolved: boolean,
+  resolved: Date | boolean,
 ) => {
   const { taskboardId, taskId, commentId } = req.params;
   const validatedToken = validateToken(req, next) as IToken;
@@ -46,6 +46,7 @@ const resolveHelper = async (
 
   // mark comment as resolved
   comment.resolved = resolved;
+  comment.markedResolvedBy = resolved ? validatedToken.id : null;
 
   try {
     await comment.save();
@@ -110,54 +111,51 @@ router.post("/", async (req: TaskRequest, res, next) => {
   return res.status(201).json(savedTask);
 });
 
-router.delete(
-  "/:taskId/comment/:commentId",
-  async (req: CommentRequest, res, next) => {
-    const { taskboardId, taskId, commentId } = req.params;
+router.delete("/:commentId", async (req: CommentRequest, res, next) => {
+  const { taskboardId, taskId, commentId } = req.params;
 
-    // validate
-    let validatedToken;
-    let taskboard;
-    let task;
-    let comment;
+  // validate
+  let validatedToken;
+  let taskboard;
+  let task;
+  let comment;
 
-    try {
-      validatedToken = validateToken(req, next) as IToken;
-      taskboard = (await checkTaskboardExists(taskboardId)) as ITaskboard;
-      task = (await checkTaskExists(taskId)) as ITask;
-      comment = (await checkCommentExists(commentId)) as IComment;
+  try {
+    validatedToken = validateToken(req, next) as IToken;
+    taskboard = (await checkTaskboardExists(taskboardId)) as ITaskboard;
+    task = (await checkTaskExists(taskId)) as ITask;
+    comment = (await checkCommentExists(commentId)) as IComment;
 
-      checkUserInTaskboard(taskboard, validatedToken.id);
-      checkTaskInTaskboard(taskboard, taskId);
-      checkCommentInTask(task, commentId);
-    } catch (error) {
-      console.error("Error checking taskboard or task", error);
-      return next(error);
-    }
+    checkUserInTaskboard(taskboard, validatedToken.id);
+    checkTaskInTaskboard(taskboard, taskId);
+    checkCommentInTask(task, commentId);
+  } catch (error) {
+    console.error("Error checking taskboard or task", error);
+    return next(error);
+  }
 
-    // creator or admin can delete comments
-    if (
-      validatedToken.id.toString() !== comment.createdBy.toString() &&
-      validatedToken.role !== "admin"
-    )
-      return res.status(401).json({ error: "Unauthorized" });
+  // creator or admin can delete comments
+  if (
+    validatedToken.id.toString() !== comment.createdBy.toString() &&
+    validatedToken.role !== "admin"
+  )
+    return res.status(401).json({ error: "Unauthorized" });
 
-    // delete comment and remove from task
-    try {
-      await Comment.findByIdAndDelete(commentId);
-      task.comments = task.comments.filter((c) => c.toString() !== commentId);
-      await task.save();
-    } catch (error) {
-      console.error("Error deleting comment", error);
-      return next(error);
-    }
+  // delete comment and remove from task
+  try {
+    await Comment.findByIdAndDelete(commentId);
+    task.comments = task.comments.filter((c) => c.toString() !== commentId);
+    await task.save();
+  } catch (error) {
+    console.error("Error deleting comment", error);
+    return next(error);
+  }
 
-    return res.status(204).end();
-  },
-);
+  return res.status(204).end();
+});
 
 router.put("/:commentId/resolve", async (req: CommentRequest, res, next) =>
-  resolveHelper(req, res, next, true),
+  resolveHelper(req, res, next, new Date()),
 );
 
 router.put("/:commentId/unresolve", async (req: CommentRequest, res, next) =>

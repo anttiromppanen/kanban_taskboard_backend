@@ -41,6 +41,7 @@ export const checkTaskboardExists = async (taskboardId: string) => {
       path: "comments",
       populate: [
         { path: "createdBy", model: "User" },
+        { path: "markedResolvedBy", model: "User" },
         { path: "replies", populate: { path: "createdBy", model: "User" } },
       ],
     },
