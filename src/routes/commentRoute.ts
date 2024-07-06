@@ -1,11 +1,13 @@
-import express from "express";
+import express, { NextFunction, Response } from "express";
 import { Types } from "mongoose";
 import {
+  checkAdminRole,
   checkCommentExists,
   checkCommentInTask,
   checkTaskExists,
   checkTaskInTaskboard,
   checkTaskboardExists,
+  checkUserExists,
   checkUserInTaskboard,
   validateToken,
 } from "../helpers/validators";
@@ -17,6 +19,43 @@ import { IComment, ITask, ITaskboard, IToken } from "../types/types";
 const router = express.Router({ mergeParams: true });
 
 router.use("/:commentId/reply", replyRoute);
+
+const resolveHelper = async (
+  req: CommentRequest,
+  res: Response,
+  next: NextFunction,
+  resolved: boolean,
+) => {
+  const { taskboardId, taskId, commentId } = req.params;
+  const validatedToken = validateToken(req, next) as IToken;
+
+  let comment: IComment;
+
+  // check if user is admin and validate everything
+  try {
+    const user = await checkUserExists(validatedToken.id);
+    checkAdminRole(user);
+    const taskboard = await checkTaskboardExists(taskboardId);
+    await checkTaskExists(taskId);
+    comment = await checkCommentExists(commentId);
+    checkTaskInTaskboard(taskboard, taskId);
+  } catch (error) {
+    console.error("Error checking taskboard or task", error);
+    return next(error);
+  }
+
+  // mark comment as resolved
+  comment.resolved = resolved;
+
+  try {
+    await comment.save();
+  } catch (error) {
+    console.error("Error marking comment as resolved", error);
+    return next(error);
+  }
+
+  return res.status(201).json(comment);
+};
 
 router.post("/", async (req: TaskRequest, res, next) => {
   const { taskboardId, taskId } = req.params;
@@ -115,6 +154,14 @@ router.delete(
 
     return res.status(204).end();
   },
+);
+
+router.put("/:commentId/resolve", async (req: CommentRequest, res, next) =>
+  resolveHelper(req, res, next, true),
+);
+
+router.put("/:commentId/unresolve", async (req: CommentRequest, res, next) =>
+  resolveHelper(req, res, next, false),
 );
 
 export default router;
