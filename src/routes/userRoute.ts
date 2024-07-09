@@ -4,6 +4,8 @@ import User from "../models/UserModel";
 import { decodedToken } from "../helpers/helpers";
 import { validateToken } from "../helpers/validators";
 import { IToken } from "../types/types";
+import Task from "../models/TaskModel";
+import Taskboard from "../models/TaskboardModel";
 
 const router = express.Router();
 
@@ -58,6 +60,24 @@ router.get("/taskboards", async (req, res, next) => {
   if (!user) return res.status(404).json({ error: "User not found" });
 
   return res.status(200).json(user.taskboards);
+});
+
+router.get("/tasks", async (req, res, next) => {
+  const validatedToken = validateToken(req, next) as IToken;
+  let tasks;
+
+  try {
+    tasks = await Task.find({ users: validatedToken.id })
+      .populate("users")
+      .populate("comments")
+      .populate("createdBy")
+      .populate("taskboardId");
+  } catch (error) {
+    console.error("Error fetching tasks", error);
+    return next(error);
+  }
+
+  return res.status(200).json(tasks);
 });
 
 export default router;

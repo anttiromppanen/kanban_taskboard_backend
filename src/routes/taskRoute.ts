@@ -20,6 +20,37 @@ const router = express.Router({ mergeParams: true });
 
 router.use("/:taskId/comment", commentRoute);
 
+router.get("/:taskId", async (req: TaskRequest, res, next) => {
+  const { taskboardId, taskId } = req.params;
+  let taskboard;
+  let task;
+
+  try {
+    validateToken(req, next) as IToken;
+
+    task = await Task.findById(taskId)
+      .populate("users")
+      .populate("createdBy")
+      .populate("taskboardId")
+      .populate({
+        path: "comments",
+        populate: [
+          { path: "createdBy", model: "User" },
+          { path: "markedResolvedBy", model: "User" },
+          { path: "replies", populate: { path: "createdBy", model: "User" } },
+        ],
+      });
+
+    taskboard = (await checkTaskboardExists(taskboardId)) as ITaskboard;
+    checkTaskInTaskboard(taskboard, taskId);
+  } catch (err) {
+    console.error("Error fetching tasks", err);
+    return next(err);
+  }
+
+  return res.status(200).json(task);
+});
+
 router.put("/:taskId", async (req: TaskRequest, res, next) => {
   const { title, description, status } = req.body;
   const { taskboardId, taskId } = req.params;
