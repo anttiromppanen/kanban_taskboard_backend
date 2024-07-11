@@ -34,18 +34,23 @@ export const checkUserExists = async (userId: string | Types.ObjectId) => {
 };
 
 export const checkTaskboardExists = async (taskboardId: string) => {
-  const taskboard = await Taskboard.findById(taskboardId).populate({
-    path: "tasks",
-    model: "Task",
-    populate: {
-      path: "comments",
-      populate: [
-        { path: "createdBy", model: "User" },
-        { path: "markedResolvedBy", model: "User" },
-        { path: "replies", populate: { path: "createdBy", model: "User" } },
-      ],
-    },
-  });
+  const taskboard = await Taskboard.findById(taskboardId)
+    .populate({
+      path: "tasks",
+      model: "Task",
+      populate: {
+        path: "comments",
+        populate: [
+          { path: "createdBy", model: "User" },
+          { path: "markedResolvedBy", model: "User" },
+          { path: "replies", populate: { path: "createdBy", model: "User" } },
+        ],
+      },
+    })
+    .populate({
+      path: "users",
+      model: "User",
+    });
 
   if (!taskboard) {
     throw new TaskboardNotFoundError("Taskboard not found");

@@ -29,6 +29,21 @@ router.get("/:taskboardId", async (req, res, next) => {
   return res.status(200).json(taskboard);
 });
 
+router.get("/:taskboardId/users", async (req, res, next) => {
+  const { taskboardId } = req.params;
+  let taskboard;
+
+  try {
+    validateToken(req, next) as IToken;
+    taskboard = await checkTaskboardExists(taskboardId);
+  } catch (error) {
+    console.error("Error checking taskboard", error);
+    return next(error);
+  }
+
+  return res.status(200).json(taskboard.users);
+});
+
 // only admins can create new taskboards
 router.post("/", async (req, res, next) => {
   const { name, description, users } = req.body;
